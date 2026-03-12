@@ -8,8 +8,15 @@ type YouTubePayload = {
   channelUrl: string;
 };
 
+type ScrapedLatestVideo = {
+  latestVideoId: string;
+  latestVideoTitle: string;
+  latestVideoThumbnail: string;
+};
+
 const CHANNEL_ID = 'UCKz8ISvm1sH1iNyo2DPzQoA';
-const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
+const getChannelUrl = (channelId: string) => `https://www.youtube.com/channel/${channelId}`;
+const CHANNEL_URL = getChannelUrl(CHANNEL_ID);
 
 const FALLBACK: YouTubePayload = {
   subscriberCount: '--',
@@ -21,19 +28,103 @@ const FALLBACK: YouTubePayload = {
 
 function normalizeSubscriberLabel(raw: string) {
   const cleaned = raw.replace(/\s+/g, ' ').trim();
-  const match = cleaned.match(/([\d,.]+)/);
+  const match = cleaned.match(/([\d,.]+)\s*([KMB])?/i);
 
   if (!match) {
     return cleaned;
   }
 
-  const numeric = Number(match[1].replace(/,/g, ''));
+  const base = Number(match[1].replace(/,/g, ''));
+
+  if (!Number.isFinite(base) || base <= 0) {
+    return cleaned;
+  }
+
+  const suffix = match[2]?.toUpperCase();
+  const multiplier = suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1;
+  const numeric = base * multiplier;
 
   if (!Number.isFinite(numeric) || numeric <= 0) {
     return cleaned;
   }
 
   return numeric.toLocaleString();
+}
+
+function extractTextFromSubscriberObject(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const textNode = value as {
+    simpleText?: unknown;
+    label?: unknown;
+    runs?: Array<{ text?: unknown }>;
+  };
+
+  if (typeof textNode.simpleText === 'string' && textNode.simpleText.trim()) {
+    return textNode.simpleText;
+  }
+
+  if (typeof textNode.label === 'string' && textNode.label.trim()) {
+    return textNode.label;
+  }
+
+  const runsText = textNode.runs
+    ?.map((run) => run?.text)
+    .filter((text): text is string => typeof text === 'string')
+    .join(' ')
+    .trim();
+
+  return runsText || null;
+}
+
+function findSubscriberTextDeep(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findSubscriberTextDeep(item);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const direct = extractTextFromSubscriberObject(record.subscriberCountText);
+  if (direct) {
+    return direct;
+  }
+
+  for (const nested of Object.values(record)) {
+    const found = findSubscriberTextDeep(nested);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
+function parseSubscriberFromInitialData(html: string): string | null {
+  const blockMatch = html.match(/(?:var\s+)?ytInitialData\s*=\s*(\{[\s\S]*?\})\s*;\s*<\/script>/);
+
+  if (!blockMatch?.[1]) {
+    return null;
+  }
+
+  try {
+    const initialData = JSON.parse(blockMatch[1]);
+    const found = findSubscriberTextDeep(initialData);
+
+    return found ? normalizeSubscriberLabel(found) : null;
+  } catch {
+    return null;
+  }
 }
 
 async function scrapeSubscriberCount() {
@@ -51,6 +142,12 @@ async function scrapeSubscriberCount() {
   }
 
   const html = await pageRes.text();
+
+  const parsedInitialDataValue = parseSubscriberFromInitialData(html);
+  if (parsedInitialDataValue) {
+    return parsedInitialDataValue;
+  }
+
   const patterns = [
     /"subscriberCountText"\s*:\s*\{\s*"simpleText"\s*:\s*"([^"]+)"/,
     /"subscriberCountText"\s*:\s*\{[^{}]*"label"\s*:\s*"([^"]+)"/,
@@ -67,26 +164,77 @@ async function scrapeSubscriberCount() {
   return null;
 }
 
+function decodeXmlEntities(value: string) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+async function scrapeLatestVideoFromFeed(channelId: string): Promise<ScrapedLatestVideo | null> {
+  const feedRes = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
+    next: { revalidate: 900 }
+  });
+
+  if (!feedRes.ok) {
+    return null;
+  }
+
+  const xml = await feedRes.text();
+  const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
+
+  if (!entryMatch?.[1]) {
+    return null;
+  }
+
+  const entryXml = entryMatch[1];
+  const idMatch = entryXml.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+  const titleMatch = entryXml.match(/<title>([^<]+)<\/title>/);
+  const thumbnailMatch = entryXml.match(/<media:thumbnail[^>]*url="([^"]+)"/);
+
+  const latestVideoId = idMatch?.[1]?.trim();
+  if (!latestVideoId) {
+    return null;
+  }
+
+  return {
+    latestVideoId,
+    latestVideoTitle: decodeXmlEntities(titleMatch?.[1]?.trim() || FALLBACK.latestVideoTitle),
+    latestVideoThumbnail: thumbnailMatch?.[1] || `https://i.ytimg.com/vi/${latestVideoId}/maxresdefault.jpg`
+  };
+}
+
 export async function GET() {
   const apiKey = process.env.YOUTUBE_API_KEY;
   const channelId = process.env.YOUTUBE_CHANNEL_ID || CHANNEL_ID;
 
   if (!apiKey) {
-    try {
-      const realSubscriberCount = await scrapeSubscriberCount();
+    const payload: YouTubePayload = { ...FALLBACK, channelUrl: getChannelUrl(channelId) };
+    let hasRealData = false;
 
-      if (realSubscriberCount) {
-        return NextResponse.json({
-          ...FALLBACK,
-          subscriberCount: realSubscriberCount,
-          source: 'youtube-channel-scrape'
-        });
-      }
-    } catch {
-      // fallback below
+    const [subscriberResult, latestVideoResult] = await Promise.allSettled([
+      scrapeSubscriberCount(),
+      scrapeLatestVideoFromFeed(channelId)
+    ]);
+
+    if (subscriberResult.status === 'fulfilled' && subscriberResult.value) {
+      payload.subscriberCount = subscriberResult.value;
+      hasRealData = true;
     }
 
-    return NextResponse.json({ ...FALLBACK, source: 'fallback' });
+    if (latestVideoResult.status === 'fulfilled' && latestVideoResult.value) {
+      payload.latestVideoId = latestVideoResult.value.latestVideoId;
+      payload.latestVideoTitle = latestVideoResult.value.latestVideoTitle;
+      payload.latestVideoThumbnail = latestVideoResult.value.latestVideoThumbnail;
+      hasRealData = true;
+    }
+
+    return NextResponse.json({
+      ...payload,
+      source: hasRealData ? 'youtube-scrape-rss' : 'fallback'
+    });
   }
 
   try {
@@ -122,7 +270,7 @@ export async function GET() {
         video.snippet?.thumbnails?.high?.url ||
         video.snippet?.thumbnails?.medium?.url ||
         FALLBACK.latestVideoThumbnail,
-      channelUrl: CHANNEL_URL
+      channelUrl: getChannelUrl(channelId)
     };
 
     return NextResponse.json({ ...data, source: 'youtube-api' });
