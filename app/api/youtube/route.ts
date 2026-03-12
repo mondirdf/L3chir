@@ -27,21 +27,36 @@ const FALLBACK: YouTubePayload = {
 };
 
 function normalizeSubscriberLabel(raw: string) {
-  const cleaned = raw.replace(/\s+/g, ' ').trim();
-  const match = cleaned.match(/([\d,.]+)\s*([KMB])?/i);
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  const normalizedDigits = raw.replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)));
+  const cleaned = normalizedDigits.replace(/\s+/g, ' ').trim();
+  const match = cleaned.match(/([\d,.]+)\s*([KMB]|thousand|million|billion|ألف|مليون|مليار)?/i);
 
   if (!match) {
     return cleaned;
   }
 
-  const base = Number(match[1].replace(/,/g, ''));
+  const normalizedNumber = match[1]
+    .replace(/[٬،]/g, '')
+    .replace(/(\d)[.](?=\d{3}(?:\D|$))/g, '$1')
+    .replace(/(\d),(?=\d{3}(?:\D|$))/g, '$1')
+    .replace(/[٫]/g, '.');
+
+  const base = Number(normalizedNumber);
 
   if (!Number.isFinite(base) || base <= 0) {
     return cleaned;
   }
 
-  const suffix = match[2]?.toUpperCase();
-  const multiplier = suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1;
+  const suffix = match[2]?.toLowerCase();
+  const multiplier =
+    suffix === 'k' || suffix === 'thousand' || suffix === 'ألف'
+      ? 1_000
+      : suffix === 'm' || suffix === 'million' || suffix === 'مليون'
+        ? 1_000_000
+        : suffix === 'b' || suffix === 'billion' || suffix === 'مليار'
+          ? 1_000_000_000
+          : 1;
   const numeric = base * multiplier;
 
   if (!Number.isFinite(numeric) || numeric <= 0) {
@@ -152,6 +167,17 @@ async function scrapeSubscriberCount() {
   }
 
   const html = await pageRes.text();
+
+  const metaDescriptionCount =
+    html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] ||
+    html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i)?.[1];
+
+  if (metaDescriptionCount) {
+    const parsedMetaDescription = normalizeSubscriberLabel(decodeXmlEntities(metaDescriptionCount));
+    if (parsedMetaDescription && parsedMetaDescription !== metaDescriptionCount) {
+      return parsedMetaDescription;
+    }
+  }
 
   const parsedInitialDataValue = parseSubscriberFromInitialData(html);
   if (parsedInitialDataValue) {
