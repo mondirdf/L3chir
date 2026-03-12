@@ -271,7 +271,7 @@ export default function Home() {
       </div>
 
       <motion.section
-        className="glass-card soft-glow px-6 py-10 text-center lg:mt-6"
+        className="glass-card soft-glow mt-6 px-6 py-10 text-center lg:mt-8"
         variants={fadeUp}
         initial="hidden"
         whileInView="show"
