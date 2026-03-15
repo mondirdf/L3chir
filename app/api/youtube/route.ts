@@ -1,334 +1,134 @@
 import { NextResponse } from 'next/server';
 
-type YouTubePayload = {
+type LatestVideo = {
+  title: string;
+  thumbnail: string;
+  url: string;
+};
+
+type YouTubeResponse = {
   subscriberCount: string;
-  latestVideoId: string;
-  latestVideoTitle: string;
-  latestVideoThumbnail: string;
-  channelUrl: string;
+  latestVideo: LatestVideo;
 };
 
-type ScrapedLatestVideo = {
-  latestVideoId: string;
-  latestVideoTitle: string;
-  latestVideoThumbnail: string;
-};
-
-const CHANNEL_ID = 'UCKz8ISvm1sH1iNyo2DPzQoA';
-const CHANNEL_HANDLE_URL = 'https://youtube.com/@ramzizrt';
-const getChannelUrl = () => process.env.YOUTUBE_CHANNEL_URL || CHANNEL_HANDLE_URL;
-const CHANNEL_URL = getChannelUrl();
-
-const FALLBACK: YouTubePayload = {
+const CHANNEL_HANDLE = 'ramzizrt';
+const CHANNEL_HANDLE_WITH_PREFIX = '@ramzizrt';
+const FALLBACK: YouTubeResponse = {
   subscriberCount: '--',
-  latestVideoId: '',
-  latestVideoTitle: '',
-  latestVideoThumbnail: '',
-  channelUrl: CHANNEL_URL
+  latestVideo: {
+    title: 'Latest upload from Ramzi ZRT',
+    thumbnail: 'https://i.ytimg.com/vi/DWcJFNfaw9c/hqdefault.jpg',
+    url: 'https://youtube.com/watch?v=DWcJFNfaw9c'
+  }
 };
 
-function normalizeSubscriberLabel(raw: string) {
-  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-  const normalizedDigits = raw.replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)));
-  const cleaned = normalizedDigits.replace(/\s+/g, ' ').trim();
-  const match = cleaned.match(/([\d,.]+)\s*([KMB]|thousand|million|billion|ألف|مليون|مليار)?/i);
+function formatSubscriberCount(rawCount: string | undefined): string {
+  const count = Number(rawCount);
 
-  if (!match) {
-    return cleaned;
+  if (!Number.isFinite(count) || count < 0) {
+    return FALLBACK.subscriberCount;
   }
 
-  const normalizedNumber = match[1]
-    .replace(/[٬،]/g, '')
-    .replace(/(\d)[.](?=\d{3}(?:\D|$))/g, '$1')
-    .replace(/(\d),(?=\d{3}(?:\D|$))/g, '$1')
-    .replace(/[٫]/g, '.');
-
-  const base = Number(normalizedNumber);
-
-  if (!Number.isFinite(base) || base <= 0) {
-    return cleaned;
+  if (count < 1_000) {
+    return `${count}`;
   }
 
-  const suffix = match[2]?.toLowerCase();
-  const multiplier =
-    suffix === 'k' || suffix === 'thousand' || suffix === 'ألف'
-      ? 1_000
-      : suffix === 'm' || suffix === 'million' || suffix === 'مليون'
-        ? 1_000_000
-        : suffix === 'b' || suffix === 'billion' || suffix === 'مليار'
-          ? 1_000_000_000
-          : 1;
-  const numeric = base * multiplier;
-
-  if (!Number.isFinite(numeric) || numeric <= 0) {
-    return cleaned;
+  if (count < 1_000_000) {
+    const value = count / 1_000;
+    return `${parseFloat(value.toFixed(1))}K`;
   }
 
-  return numeric.toLocaleString();
+  if (count < 1_000_000_000) {
+    const value = count / 1_000_000;
+    return `${parseFloat(value.toFixed(1))}M`;
+  }
+
+  const value = count / 1_000_000_000;
+  return `${parseFloat(value.toFixed(1))}B`;
 }
 
-function extractTextFromSubscriberObject(value: unknown): string | null {
-  if (!value || typeof value !== 'object') {
-    return null;
+async function fetchLatestVideo(apiKey: string): Promise<LatestVideo> {
+  const searchParams = new URLSearchParams({
+    part: 'snippet',
+    type: 'video',
+    order: 'date',
+    maxResults: '1',
+    q: CHANNEL_HANDLE_WITH_PREFIX,
+    key: apiKey
+  });
+
+  const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`, {
+    next: { revalidate: 3600 }
+  });
+
+  if (!response.ok) {
+    return FALLBACK.latestVideo;
   }
 
-  const textNode = value as {
-    simpleText?: unknown;
-    label?: unknown;
-    runs?: Array<{ text?: unknown }>;
-    accessibility?: {
-      accessibilityData?: {
-        label?: unknown;
+  const data = (await response.json()) as {
+    items?: Array<{
+      id?: { videoId?: string };
+      snippet?: {
+        title?: string;
+        thumbnails?: { high?: { url?: string } };
       };
-    };
+    }>;
   };
 
-  if (typeof textNode.simpleText === 'string' && textNode.simpleText.trim()) {
-    return textNode.simpleText;
-  }
+  const item = data.items?.[0];
+  const videoId = item?.id?.videoId;
 
-  if (typeof textNode.label === 'string' && textNode.label.trim()) {
-    return textNode.label;
-  }
-
-  const accessibilityLabel = textNode.accessibility?.accessibilityData?.label;
-  if (typeof accessibilityLabel === 'string' && accessibilityLabel.trim()) {
-    return accessibilityLabel;
-  }
-
-  const runsText = textNode.runs
-    ?.map((run) => run?.text)
-    .filter((text): text is string => typeof text === 'string')
-    .join(' ')
-    .trim();
-
-  return runsText || null;
-}
-
-function findSubscriberTextDeep(value: unknown): string | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findSubscriberTextDeep(item);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
-  }
-
-  const record = value as Record<string, unknown>;
-  const direct = extractTextFromSubscriberObject(record.subscriberCountText);
-  if (direct) {
-    return direct;
-  }
-
-  for (const nested of Object.values(record)) {
-    const found = findSubscriberTextDeep(nested);
-    if (found) {
-      return found;
-    }
-  }
-
-  return null;
-}
-
-function parseSubscriberFromInitialData(html: string): string | null {
-  const blockMatch = html.match(/(?:var\s+)?ytInitialData\s*=\s*(\{[\s\S]*?\})\s*;\s*<\/script>/);
-
-  if (!blockMatch?.[1]) {
-    return null;
-  }
-
-  try {
-    const initialData = JSON.parse(blockMatch[1]);
-    const found = findSubscriberTextDeep(initialData);
-
-    return found ? normalizeSubscriberLabel(found) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function scrapeSubscriberCount() {
-  const pageRes = await fetch(CHANNEL_URL, {
-    headers: {
-      'user-agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'accept-language': 'en-US,en;q=0.9'
-    },
-    next: { revalidate: 900 }
-  });
-
-  if (!pageRes.ok) {
-    return null;
-  }
-
-  const html = await pageRes.text();
-
-  const metaDescriptionCount =
-    html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] ||
-    html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i)?.[1];
-
-  if (metaDescriptionCount) {
-    const parsedMetaDescription = normalizeSubscriberLabel(decodeXmlEntities(metaDescriptionCount));
-    if (parsedMetaDescription && parsedMetaDescription !== metaDescriptionCount) {
-      return parsedMetaDescription;
-    }
-  }
-
-  const parsedInitialDataValue = parseSubscriberFromInitialData(html);
-  if (parsedInitialDataValue) {
-    return parsedInitialDataValue;
-  }
-
-  const patterns = [
-    /"subscriberCountText"\s*:\s*\{\s*"simpleText"\s*:\s*"([^"]+)"/,
-    /"subscriberCountText"\s*:\s*\{[^{}]*"label"\s*:\s*"([^"]+)"/,
-    /"subscriberCountText"\s*:\s*\{\s*"runs"\s*:\s*\[\{\s*"text"\s*:\s*"([^"]+)"/,
-    /"subscriberCountText"\s*:\s*\{[\s\S]*?"accessibilityData"\s*:\s*\{\s*"label"\s*:\s*"([^"]+)"/
-  ];
-
-  for (const pattern of patterns) {
-    const found = html.match(pattern)?.[1];
-    if (found) {
-      return normalizeSubscriberLabel(found);
-    }
-  }
-
-  return null;
-}
-
-function extractChannelIdFromHtml(html: string): string | null {
-  const directMatch = html.match(/"channelId"\s*:\s*"(UC[\w-]{20,})"/i)?.[1];
-  if (directMatch) {
-    return directMatch;
-  }
-
-  const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{20,})"/i)?.[1];
-  return canonicalMatch || null;
-}
-
-async function resolveChannelIdFromUrl(channelUrl: string, fallbackChannelId: string): Promise<string> {
-  try {
-    const pageRes = await fetch(channelUrl, {
-      headers: {
-        'user-agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'accept-language': 'en-US,en;q=0.9'
-      },
-      next: { revalidate: 900 }
-    });
-
-    if (!pageRes.ok) {
-      return fallbackChannelId;
-    }
-
-    const html = await pageRes.text();
-    return extractChannelIdFromHtml(html) || fallbackChannelId;
-  } catch {
-    return fallbackChannelId;
-  }
-}
-
-function decodeXmlEntities(value: string) {
-  return value
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
-}
-
-async function scrapeLatestVideoFromFeed(channelId: string): Promise<ScrapedLatestVideo | null> {
-  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-  const feedRes = await fetch(feedUrl, {
-    next: { revalidate: 900 }
-  });
-
-  if (!feedRes.ok) {
-    return null;
-  }
-
-  const xml = await feedRes.text();
-  const idMatch = xml.match(/<yt:videoId>\s*([^<\s]+)\s*<\/yt:videoId>/i);
-  const titleMatch = xml.match(/<entry>[\s\S]*?<title>([\s\S]*?)<\/title>/i);
-
-  const latestVideoId = idMatch?.[1]?.trim();
-  if (!latestVideoId) {
-    return null;
+  if (!videoId) {
+    return FALLBACK.latestVideo;
   }
 
   return {
-    latestVideoId,
-    latestVideoTitle: decodeXmlEntities(titleMatch?.[1]?.trim() || 'Latest upload from Ramzi ZRT'),
-    latestVideoThumbnail: `https://i.ytimg.com/vi/${latestVideoId}/hqdefault.jpg`
+    title: item?.snippet?.title || FALLBACK.latestVideo.title,
+    thumbnail: item?.snippet?.thumbnails?.high?.url || FALLBACK.latestVideo.thumbnail,
+    url: `https://youtube.com/watch?v=${videoId}`
   };
+}
+
+async function fetchSubscriberCount(apiKey: string): Promise<string> {
+  const channelParams = new URLSearchParams({
+    part: 'statistics',
+    forHandle: CHANNEL_HANDLE,
+    key: apiKey
+  });
+
+  const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?${channelParams.toString()}`, {
+    next: { revalidate: 3600 }
+  });
+
+  if (!response.ok) {
+    return FALLBACK.subscriberCount;
+  }
+
+  const data = (await response.json()) as {
+    items?: Array<{ statistics?: { subscriberCount?: string } }>;
+  };
+
+  return formatSubscriberCount(data.items?.[0]?.statistics?.subscriberCount);
 }
 
 export async function GET() {
   const apiKey = process.env.YOUTUBE_API_KEY;
-  const channelIdFromEnv = process.env.YOUTUBE_CHANNEL_ID;
-  const channelId = channelIdFromEnv || (await resolveChannelIdFromUrl(CHANNEL_URL, CHANNEL_ID));
 
   if (!apiKey) {
-    const payload: YouTubePayload = { ...FALLBACK, channelUrl: getChannelUrl() };
-    let hasRssLatestVideo = false;
-
-    const [subscriberResult, latestVideoResult] = await Promise.allSettled([
-      scrapeSubscriberCount(),
-      scrapeLatestVideoFromFeed(channelId)
-    ]);
-
-    if (subscriberResult.status === 'fulfilled' && subscriberResult.value) {
-      payload.subscriberCount = subscriberResult.value;
-    }
-
-    if (latestVideoResult.status === 'fulfilled' && latestVideoResult.value) {
-      payload.latestVideoId = latestVideoResult.value.latestVideoId;
-      payload.latestVideoTitle = latestVideoResult.value.latestVideoTitle;
-      payload.latestVideoThumbnail = latestVideoResult.value.latestVideoThumbnail;
-      hasRssLatestVideo = true;
-    }
-
-    return NextResponse.json({
-      ...payload,
-      source: hasRssLatestVideo ? 'rss' : 'fallback'
-    });
+    return NextResponse.json(FALLBACK);
   }
 
   try {
-    const channelRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`,
-      { next: { revalidate: 900 } }
-    );
+    const [subscriberCount, latestVideo] = await Promise.all([
+      fetchSubscriberCount(apiKey),
+      fetchLatestVideo(apiKey)
+    ]);
 
-    if (!channelRes.ok) {
-      return NextResponse.json({ ...FALLBACK, source: 'fallback' });
-    }
-
-    const channelData = await channelRes.json();
-    const channel = channelData?.items?.[0];
-
-    if (!channel) {
-      return NextResponse.json({ ...FALLBACK, source: 'fallback' });
-    }
-
-    const latestVideo = await scrapeLatestVideoFromFeed(channelId);
-
-    const data: YouTubePayload = {
-      subscriberCount: Number(channel.statistics?.subscriberCount || 0).toLocaleString(),
-      latestVideoId: latestVideo?.latestVideoId || FALLBACK.latestVideoId,
-      latestVideoTitle: latestVideo?.latestVideoTitle || FALLBACK.latestVideoTitle,
-      latestVideoThumbnail: latestVideo?.latestVideoThumbnail || FALLBACK.latestVideoThumbnail,
-      channelUrl: getChannelUrl()
-    };
-
-    return NextResponse.json({ ...data, source: latestVideo ? 'rss' : 'fallback' });
+    return NextResponse.json({
+      subscriberCount,
+      latestVideo
+    });
   } catch {
-    return NextResponse.json({ ...FALLBACK, source: 'fallback' });
+    return NextResponse.json(FALLBACK);
   }
 }

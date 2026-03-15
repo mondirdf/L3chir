@@ -7,10 +7,11 @@ import Image from 'next/image';
 
 type YouTubeData = {
   subscriberCount: string;
-  latestVideoId: string;
-  latestVideoTitle: string;
-  latestVideoThumbnail: string;
-  channelUrl: string;
+  latestVideo: {
+    title: string;
+    thumbnail: string;
+    url: string;
+  };
 };
 
 type SocialLink = {
@@ -20,11 +21,12 @@ type SocialLink = {
 };
 
 const defaultData: YouTubeData = {
-  subscriberCount: '39.7 k',
-  latestVideoId: 'DWcJFNfaw9c',
-  latestVideoTitle: 'Latest upload from Ramzi ZRT',
-  latestVideoThumbnail: 'https://i.ytimg.com/vi/DWcJFNfaw9c/hqdefault.jpg',
-  channelUrl: 'https://youtube.com/@ramzizrt'
+  subscriberCount: '--',
+  latestVideo: {
+    title: 'Latest upload from Ramzi ZRT',
+    thumbnail: 'https://i.ytimg.com/vi/DWcJFNfaw9c/hqdefault.jpg',
+    url: 'https://youtube.com/watch?v=DWcJFNfaw9c'
+  }
 };
 
 const socialLinks: SocialLink[] = [
@@ -94,7 +96,7 @@ function PlatformIcon({ icon }: { icon: SocialLink['icon'] }) {
 
 export default function Home() {
   const [youtubeData, setYoutubeData] = useState(defaultData);
-  const [thumbnailSrc, setThumbnailSrc] = useState(defaultData.latestVideoThumbnail);
+  const [thumbnailSrc, setThumbnailSrc] = useState(defaultData.latestVideo.thumbnail);
   const [cursor, setCursor] = useState({ x: -200, y: -200 });
 
   const particles = useMemo(
@@ -131,18 +133,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const trimmedThumbnail = youtubeData.latestVideoThumbnail?.trim();
+    const trimmedThumbnail = youtubeData.latestVideo.thumbnail?.trim();
     if (trimmedThumbnail) {
       setThumbnailSrc(trimmedThumbnail);
       return;
     }
 
-    const fallbackThumbnail = youtubeData.latestVideoId
-      ? `https://i.ytimg.com/vi/${youtubeData.latestVideoId}/hqdefault.jpg`
-      : defaultData.latestVideoThumbnail;
+    const fallbackThumbnail = defaultData.latestVideo.thumbnail;
 
     setThumbnailSrc(fallbackThumbnail);
-  }, [youtubeData.latestVideoThumbnail, youtubeData.latestVideoId]);
+  }, [youtubeData.latestVideo.thumbnail]);
 
   return (
     <main className="relative z-10 mx-auto min-h-screen w-full max-w-[1100px] overflow-hidden px-5 pb-16 pt-8 sm:px-6 lg:pt-[60px]">
@@ -240,7 +240,7 @@ export default function Home() {
           >
             <h2 className="heading-font mb-4 text-3xl uppercase">Latest Video</h2>
             <motion.a
-              href={`https://www.youtube.com/watch?v=${youtubeData.latestVideoId || defaultData.latestVideoId}`}
+              href={youtubeData.latestVideo.url || defaultData.latestVideo.url}
               target="_blank"
               rel="noreferrer"
               whileHover={{ y: -4, scale: 1.01 }}
@@ -252,23 +252,21 @@ export default function Home() {
                   alt="Latest video"
                   className="w-full h-full object-cover"
                   onError={() => {
-                    const fallbackThumbnail = youtubeData.latestVideoId
-                      ? `https://i.ytimg.com/vi/${youtubeData.latestVideoId}/hqdefault.jpg`
-                      : defaultData.latestVideoThumbnail;
+                    const fallbackThumbnail = defaultData.latestVideo.thumbnail;
 
                     if (thumbnailSrc !== fallbackThumbnail) {
                       setThumbnailSrc(fallbackThumbnail);
                       return;
                     }
 
-                    if (thumbnailSrc !== defaultData.latestVideoThumbnail) {
-                      setThumbnailSrc(defaultData.latestVideoThumbnail);
+                    if (thumbnailSrc !== defaultData.latestVideo.thumbnail) {
+                      setThumbnailSrc(defaultData.latestVideo.thumbnail);
                     }
                   }}
                 />
               </div>
               <div className="border-t border-white/15 p-4">
-                <p className="text-sm text-[#BFBFBF]">{youtubeData.latestVideoTitle}</p>
+                <p className="text-sm text-[#BFBFBF]">{youtubeData.latestVideo.title}</p>
               </div>
             </motion.a>
           </motion.section>
@@ -318,7 +316,7 @@ export default function Home() {
       >
         <p className="heading-font text-3xl uppercase leading-tight">Join the community on YouTube.</p>
         <motion.a
-          href={youtubeData.channelUrl}
+          href="https://youtube.com/@ramzizrt"
           target="_blank"
           rel="noreferrer"
           whileHover={{ scale: 1.04 }}
