@@ -3,27 +3,27 @@ import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ramzi.zrt'),
-  title: 'Ramzi ZRT | Creator Links',
+  metadataBase: new URL('https://youtube.com/@l3chiiir-j1r'),
+  title: 'L3chiiir | Creator Links',
   description:
-    'Premium link-in-bio page for Ramzi ZRT with social links, latest YouTube video, featured content, and subscribe call-to-action.',
+    'Dark, minimal creator page for L3chiiir featuring comedy storytelling content, social links, and the latest YouTube series.',
   openGraph: {
-    title: 'Ramzi ZRT | Creator Links',
+    title: 'L3chiiir | Creator Links',
     description:
-      'Premium link-in-bio page for Ramzi ZRT with social links, latest YouTube video, featured content, and subscribe call-to-action.',
-    images: [{ url: '/og-image.svg', type: 'image/svg+xml', width: 1200, height: 630, alt: 'Ramzi ZRT OG Image' }]
+      'Dark, minimal creator page for L3chiiir featuring comedy storytelling content, social links, and the latest YouTube series.',
+    images: [{ url: '/og-image.svg', type: 'image/svg+xml', width: 1200, height: 630, alt: 'L3chiiir OG Image' }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ramzi ZRT | Creator Links',
+    title: 'L3chiiir | Creator Links',
     description:
-      'Premium link-in-bio page for Ramzi ZRT with social links, latest YouTube video, featured content, and subscribe call-to-action.',
+      'Dark, minimal creator page for L3chiiir featuring comedy storytelling content, social links, and the latest YouTube series.',
     images: ['/og-image.svg']
   },
   icons: {
-    icon: '/ramzi-logo.svg',
-    shortcut: '/ramzi-logo.svg',
-    apple: '/ramzi-logo.svg'
+    icon: '/l3chiiir.svg',
+    shortcut: '/l3chiiir.svg',
+    apple: '/l3chiiir.svg'
   }
 };
 

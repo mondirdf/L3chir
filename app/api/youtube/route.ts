@@ -8,15 +8,15 @@ type YouTubeRssResponse = {
   latestVideoTitle: string;
 };
 
-const CHANNEL_HANDLE_URL = 'https://youtube.com/@ramzizrt';
-const FALLBACK_VIDEO_ID = 'DWcJFNfaw9c';
-const FALLBACK_SUBSCRIBERS = '39.6K';
+const CHANNEL_HANDLE_URL = 'https://youtube.com/@l3chiiir-j1r';
+const FALLBACK_VIDEO_ID = 'eJ2fj8YBSnU';
+const FALLBACK_SUBSCRIBERS = '10K+';
 const FALLBACK: YouTubeRssResponse = {
   subscribers: FALLBACK_SUBSCRIBERS,
   latestVideoId: FALLBACK_VIDEO_ID,
   latestVideoThumbnail: `https://i.ytimg.com/vi/${FALLBACK_VIDEO_ID}/hqdefault.jpg`,
-  latestVideoUrl: `https://youtube.com/watch?v=${FALLBACK_VIDEO_ID}`,
-  latestVideoTitle: 'Latest upload from Ramzi ZRT'
+  latestVideoUrl: `https://m.youtube.com/watch?v=${FALLBACK_VIDEO_ID}`,
+  latestVideoTitle: 'Watch the latest story from L3chiiir'
 };
 
 async function fetchText(url: string): Promise<string | null> {
@@ -44,13 +44,18 @@ function extractLatestVideoId(rssXml: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
+function extractLatestVideoTitle(rssXml: string): string | null {
+  const match = rssXml.match(/<entry>[\s\S]*?<title>([^<]+)<\/title>/i);
+  return match?.[1]?.trim() || null;
+}
+
 function normalizeSubscribers(rawValue: string): string | null {
   const compactValue = rawValue
     .replace(/\u00a0/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  const numberMatch = compactValue.match(/([\d.,]+\s*[KMB]?)/i);
+  const numberMatch = compactValue.match(/([\d.,]+\s*[KMB]?\+?)/i);
   if (!numberMatch) {
     return null;
   }
@@ -70,7 +75,7 @@ function extractSubscribers(channelHtml: string): string {
     }
   }
 
-  const genericSubscribersMatch = channelHtml.match(/([\d.,]+\s*[KMB]?)\s+subscribers?/i);
+  const genericSubscribersMatch = channelHtml.match(/([\d.,]+\s*[KMB]?\+?)\s+subscribers?/i);
   if (genericSubscribersMatch?.[1]) {
     const normalized = normalizeSubscribers(genericSubscribersMatch[1]);
     if (normalized) {
@@ -81,13 +86,13 @@ function extractSubscribers(channelHtml: string): string {
   return FALLBACK_SUBSCRIBERS;
 }
 
-function buildPayload(videoId: string, subscribers: string): YouTubeRssResponse {
+function buildPayload(videoId: string, subscribers: string, title: string): YouTubeRssResponse {
   return {
     subscribers,
     latestVideoId: videoId,
     latestVideoThumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-    latestVideoUrl: `https://youtube.com/watch?v=${videoId}`,
-    latestVideoTitle: 'Latest upload from Ramzi ZRT'
+    latestVideoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    latestVideoTitle: title
   };
 }
 
@@ -99,8 +104,8 @@ export async function GET() {
     }
 
     const subscribers = extractSubscribers(channelHtml);
-
     const channelId = extractChannelId(channelHtml);
+
     if (!channelId) {
       return NextResponse.json({
         ...FALLBACK,
@@ -119,6 +124,8 @@ export async function GET() {
     }
 
     const latestVideoId = extractLatestVideoId(rssXml);
+    const latestVideoTitle = extractLatestVideoTitle(rssXml) || FALLBACK.latestVideoTitle;
+
     if (!latestVideoId) {
       return NextResponse.json({
         ...FALLBACK,
@@ -126,7 +133,7 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json(buildPayload(latestVideoId, subscribers));
+    return NextResponse.json(buildPayload(latestVideoId, subscribers, latestVideoTitle));
   } catch {
     return NextResponse.json(FALLBACK);
   }
