@@ -1,143 +1,95 @@
-export const youtubeVideos = ['DWcJFNfaw9c', 'aqz-KE-bpKQ', 'XHTrLYShBRQ', 'bC5m5P6Q_9A'];
+export const youtubeVideos = ['eJ2fj8YBSnU'];
 
 export const contentStyles = [
   {
-    title: 'Street Challenges',
+    title: 'Social Comedy',
     image:
-      'https://images.unsplash.com/photo-1483721310020-03333e577078?auto=format&fit=crop&w=900&q=80'
+      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80'
   },
   {
-    title: 'Boxing Training',
+    title: 'Algerian Culture Stories',
     image:
-      'https://images.unsplash.com/photo-1517438984742-1262db08379e?auto=format&fit=crop&w=900&q=80'
+      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80'
   },
   {
-    title: 'Real Life Stories',
+    title: 'Sketch Characters',
     image:
-      'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=900&q=80'
+      'https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&w=900&q=80'
   },
   {
-    title: 'Creative YouTube Experiments',
+    title: 'Daily Life Humor',
     image:
-      'https://images.unsplash.com/photo-1509395176047-4a66953fd231?auto=format&fit=crop&w=900&q=80'
+      'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80'
   }
 ];
 
 export const popularVideos = [
   {
-    title: 'Street Challenge: One Night, One City',
+    title: 'Watch the Series 🎬',
     thumbnail:
-      'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80',
-    url: 'https://www.youtube.com/watch?v=DWcJFNfaw9c'
-  },
-  {
-    title: 'Inside The Boxing Routine',
-    thumbnail:
-      'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=1600&q=80',
-    url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
-  },
-  {
-    title: 'Real Storytelling in the Streets',
-    thumbnail:
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1600&q=80',
-    url: 'https://www.youtube.com/watch?v=XHTrLYShBRQ'
-  },
-  {
-    title: 'Cinematic Experiment: 24h Creation',
-    thumbnail:
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=80',
-    url: 'https://www.youtube.com/watch?v=bC5m5P6Q_9A'
+      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1600&q=80',
+    url: 'https://m.youtube.com/watch?v=eJ2fj8YBSnU'
   }
 ];
 
 export const behindTheScenesPhotos = [
   {
-    title: 'Filming Sessions',
+    title: 'Writers Room Energy',
     image:
       'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
     layout: 'md:col-span-2 md:row-span-2'
   },
   {
-    title: 'Boxing Camp',
+    title: 'Sketch Rehearsals',
     image:
-      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&w=900&q=80',
     layout: ''
   },
   {
-    title: 'Editing Nights',
+    title: 'Edit Sessions',
     image:
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80',
     layout: ''
   },
   {
-    title: 'Planning The Story',
+    title: 'Character Planning',
     image:
-      'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=80',
     layout: 'md:col-span-2'
   }
 ];
 
 export const journeyMilestones = [
   {
-    title: 'Started YouTube',
-    description: 'Picked up the camera, published the first raw videos, and committed to building a creator voice.'
+    title: 'Started creating short sketches',
+    description: 'Built a recognizable tone through quick comedy bits and relatable social moments.'
   },
   {
-    title: 'Growing the audience',
-    description: 'Consistent uploads and stronger storytelling started attracting a loyal community.'
+    title: 'Audience momentum',
+    description: 'Consistent uploads and recurring characters helped the community grow around the channel.'
   },
   {
-    title: 'Boxing and street challenges',
-    description: 'Brought discipline and adrenaline into the channel by combining training with real street energy.'
+    title: 'Storytelling focus',
+    description: 'Real-life inspiration became the base for more narrative-driven videos and series formats.'
   },
   {
-    title: 'Creative storytelling videos',
-    description: 'Focused on cinematic edits and honest narratives to make every video feel human and memorable.'
+    title: 'Entertainment series era',
+    description: 'Expanded into episodic content with stronger world-building, callbacks, and character arcs.'
   }
 ];
 
 export const portfolioItems = [
   {
-    title: 'Noir Street Frames',
-    category: 'Photography',
+    title: 'Series Poster Frame',
+    category: 'Entertainment Branding',
     image:
-      'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    title: 'Midnight City Sequence',
-    category: 'Video Editing',
-    image:
-      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    title: 'Monochrome Identity Kit',
-    category: 'Graphic Design',
-    image:
-      'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    title: 'Portraits in Shadow',
-    category: 'Photography',
-    image:
-      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    title: 'Cinematic Brand Film',
-    category: 'Video Editing',
-    image:
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    title: 'Editorial Poster Series',
-    category: 'Graphic Design',
-    image:
-      'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=900&q=80'
+      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80'
   }
 ];
 
 export const skills = [
-  { name: 'Photography', value: 95 },
-  { name: 'Video Editing', value: 93 },
-  { name: 'Graphic Design', value: 91 },
-  { name: 'YouTube Production', value: 89 }
+  { name: 'Comedy Writing', value: 95 },
+  { name: 'Storytelling', value: 93 },
+  { name: 'Character Sketches', value: 91 },
+  { name: 'Series Production', value: 89 }
 ];

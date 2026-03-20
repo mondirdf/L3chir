@@ -15,22 +15,16 @@ export default function AboutSection() {
     >
       <div className="section-shell grid items-center gap-12 md:grid-cols-2">
         <div className="relative h-[430px] overflow-hidden border border-[#1A1A1A]">
-          <Image
-            src="https://images.unsplash.com/photo-1503342452485-86ff0a4c4e36?auto=format&fit=crop&w=900&q=80"
-            alt="Ramzi portrait"
-            fill
-            className="object-cover grayscale"
-          />
+          <Image src="/l3chiiir.svg" alt="L3chiiir portrait" fill className="object-cover" />
         </div>
         <div>
           <p className="section-label">About</p>
-          <h2 className="heading-font text-5xl md:text-6xl">About Ramzi</h2>
+          <h2 className="heading-font text-5xl md:text-6xl">About L3chiiir</h2>
           <p className="mt-6 leading-relaxed text-[#BFBFBF]">
-            Ramzi is a creative content creator focused on visual storytelling. He produces
-            YouTube videos, photography work, and graphic design projects.
+            L3chiiir creates comedic stories, social sketches, and narrative-driven videos inspired by real life.
           </p>
           <p className="mt-4 leading-relaxed text-[#BFBFBF]">
-            His work blends creativity, cinematic visuals and modern storytelling.
+            The content blends humor, relatable characters, and episodic entertainment in a clean dark presentation.
           </p>
         </div>
       </div>

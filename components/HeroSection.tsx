@@ -9,7 +9,7 @@ export default function HeroSection() {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=2100&q=80')"
+            "url('https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=2100&q=80')"
         }}
       />
       <div className="cinematic-overlay absolute inset-0" />
@@ -20,24 +20,19 @@ export default function HeroSection() {
         transition={{ duration: 1.1, ease: 'easeOut' }}
         className="section-shell relative z-10 text-center"
       >
-        <p className="section-label">Ramzi ZRT • Creator World</p>
-        <h1 className="heading-font text-7xl leading-[0.9] sm:text-8xl md:text-9xl">RAMZI ZRT</h1>
+        <p className="section-label">L3chiiir • Creator World</p>
+        <h1 className="heading-font text-7xl leading-[0.9] sm:text-8xl md:text-9xl">L3chiiir</h1>
 
-        <p className="mt-5 text-sm uppercase tracking-[0.3em] text-[#BFBFBF] md:text-base">Content Creator</p>
-
-        <p
-          dir="rtl"
-          className="arabic-slogan mx-auto mb-[10px] mt-[8px] max-w-2xl text-xl leading-relaxed text-[rgba(255,255,255,0.8)] sm:text-2xl md:text-3xl"
-        >
-          الهدف هو نرجع يوتيوب الجزائر أفضل
+        <p className="mt-5 text-sm uppercase tracking-[0.3em] text-[#BFBFBF] md:text-base">
+          Comedian &amp; Storytelling Creator
         </p>
 
-        <p className="mt-6 text-sm uppercase tracking-[0.3em] text-[#BFBFBF] md:text-base">
-          Street Challenges • Boxing • Cinematic Storytelling
+        <p className="mx-auto mt-6 max-w-3xl text-sm uppercase tracking-[0.3em] text-[#D8B4A0] md:text-base">
+          Social Comedy • Algerian Culture Stories • Daily Life Humor
         </p>
 
-        <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-[#BFBFBF] md:text-base">
-          Welcome to my creator world: raw moments, hard training, and stories filmed like short movies.
+        <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-[#F2D5C6] md:text-base">
+          Creating comedic stories, social sketches, and entertaining content inspired by real life.
         </p>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -48,10 +43,10 @@ export default function HeroSection() {
             Watch Videos
           </a>
           <a
-            href="#portfolio"
-            className="border border-[#1A1A1A] bg-white/5 px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] transition hover:border-white hover:bg-white hover:text-black"
+            href="#content-style"
+            className="border border-[#3A1C12] bg-white/5 px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] transition hover:border-white hover:bg-white hover:text-black"
           >
-            Explore Portfolio
+            Explore Style
           </a>
         </div>
       </motion.div>
